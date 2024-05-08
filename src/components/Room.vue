@@ -1,15 +1,15 @@
 <script lang="ts">
 import { ref } from 'vue';
 import LogicFlow from '@logicflow/core';
-import { io } from 'socket.io-client';
 import { useRoute } from 'vue-router';
 import debounce from 'lodash.debounce';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { io } from 'socket.io-client';
 import { SelectionSelect, DndPanel } from '@logicflow/extension';
 import '@logicflow/extension/lib/style/index.css';
 import '@logicflow/core/dist/style/index.css';
 import '@logicflow/extension/lib/style/index.css';
-import { groupData } from './data';
+import Cooperate from '../cooperate'
 
 LogicFlow.use(SelectionSelect);
 
@@ -26,7 +26,7 @@ export default {
     return {
       lf: null,
       isHide: false,
-      roomId: null,
+      userName: null,
       socket: null,
       activityMsg: [],
       dialogVisible: true,
@@ -39,25 +39,16 @@ export default {
     this.$data.socket.disconnect();
   },
   mounted() {
-    
-    // socket init
-    const route = useRoute();
-    const roomId = route.params.id;
-    this.$data.roomId = roomId;
 
-    const socket = io('ws://localhost:3001', {
-      withCredentials: true,
-      extraHeaders: {
-        'raw-url': window.location.href
-      }
-    });
-    this.$data.socket = socket;
+    const route = useRoute();
+    const userName = route.query.userName as string;
+    this.$data.userName = userName;
 
     let lf = new LogicFlow({
       container: this.$refs.container,
       width: 1100,
       height: 700,
-      grid: false,
+      grid: true,
       adjustNodePosition: true,
       textEdit: false,
       stopZoomGraph: true,
@@ -66,7 +57,7 @@ export default {
       keyboard: {
         enabled: true
       },
-      plugins: [SelectionSelect, DndPanel]
+      plugins: [SelectionSelect, DndPanel, Cooperate]
     });
     this.$data.lf = lf;
     lf.openSelectionSelect();
@@ -111,24 +102,26 @@ export default {
         icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAAH6ji2bAAAABGdBTUEAALGPC/xhBQAAA1BJREFUOBFtVE1IVUEYPXOf+tq40Y3vPcmFIdSjIorWoRG0ERWUgnb5FwVhYQSl72oUoZAboxKNFtWiwKRN0M+jpfSzqJAQclHo001tKkjl3emc8V69igP3znzfnO/M9zcDcKT67azmjYWTwl9Vn7Vumeqzj1DVb6cleQY4oAVnIOPb+mKAGxQmKI5CWNJ2aLPatxWa3aB9K7/fB+/Z0jUF6TmMlFLQqrkECWQzOZxYGjTlOl8eeKaIY5yHnFn486xBustDjWT6dG7pmjHOJd+33t0iitTPkK6tEvjxq4h2MozQ6WFSX/LkDUGfFwfhEZj1Auz/U4pyAi5Sznd7uKzznXeVHlI/Aywmk6j7fsUsEuCGADrWARXXwjxWQsUbIupDHJI7kF5dRktg0eN81IbiZXiTESic50iwS+t1oJgL83jAiBupLDCQqwziaWSoAFSeIR3P5Xv5az00wyIn35QRYTwdSYbz8pH8fxUUAtxnFvYmEmgI0wYXUXcCCSpeEVpXlsRhBnCEATxWylL9+EKCAYhe1NGstUa6356kS9NVvt3DU2fd+Wtbm/+lSbylJqsqkSm9CRhvoJVlvKPvF1RKY/FcPn5j4UfIMLn8D4UYb54BNsilTDXKnF4CfTobA0FpoW/LSp306wkXM+XaOJhZaFkcNM82ASNAWMrhrUbRfmyeI1FvRBTpN06WKxa9BK0o2E4Pd3zfBBEwPsv9sQBnmLVbLEIZ/Xe9LYwJu/Er17W6HYVBc7vmuk0xUQ+pqxdom5Fnp55SiytXLPYoMXNM4u4SNSCFWnrVIzKG3EGyMXo6n/BQOe+bX3FClY4PwydVhthOZ9NnS+ntiLh0fxtlUJHAuGaFoVmttpVMeum0p3WEXbcll94l1wM/gZ0Ccczop77VvN2I7TlsZCsuXf1WHvWEhjO8DPtyOVg2/mvK9QqboEth+7pD6NUQC1HN/TwvydGBARi9MZSzLE4b8Ru3XhX2PBxf8E1er2A6516o0w4sIA+lwURhAON82Kwe2iDAC1Watq4XHaGQ7skLcFOtI5lDxuM2gZe6WFIotPAhbaeYlU4to5cuarF1QrcZ/lwrLaCJl66JBocYZnrNlvm2+MBCTmUymPrYZVbjdlr/BxlMjmNmNI3SAAAAAElFTkSuQmCC'
       }
     ]);
-    lf.on(
-      'node:mouseup,node:mousemove,node:delete,node:add,node:drop,edge:add,edge:delete,edge:adjust,edge:exchange-node,blank:mousemove,blank:drop',
-      debounce(this.brodcastData, 80)
-    );
-    lf.render();
 
-    socket.on('drawing', (data) => {
-      console.log('客户端收到:', data);
-      lf.render(data);
-    });
-    socket.on('sys', (msg) => {
-      this.$data.activityMsg.push(msg);
-    });
-    socket.on('peopleNumJob', (num) => {
-      this.$data.peopleNum = num;
-    });
+    lf.render();
+    this.cooperateTest();
   },
   methods: {
+    cooperateTest() {
+      this.lf.extension.Cooperate.setProvider(null, {
+        roomName: 'demo-room',
+        signalingList: ['ws://localhost:4445']
+      })
+
+      this.lf.extension.Cooperate.setUserInfo({
+        id: Math.random(),
+        name: this.$data.userName,
+        color: ['#6a2c70', '#b83b5e', '#f08a5d', '#112d4e', '#252a34'][
+          Math.floor(Math.random() * 5)
+        ],
+        avatar: 'https://img0.baidu.com/it/u=4270674549,2416627993&fm=253&app=138&size=w931&n=0&f=JPEG&fmt=auto?sec=1696006800&t=4d32871d14a7224a4591d0c3c7a97311'
+      })
+    },
     leaveRoom() {
       ElMessageBox.confirm('确认是否退出房间', '确认', {
         confirmButtonText: '确定',
@@ -144,7 +137,7 @@ export default {
       });
     },
     confirmUser() {
-      this.$data.socket.emit('join', this.$data.curUser);
+      // this.$data.socket.emit('join', this.$data.curUser);
       this.$data.dialogVisible = false;
     },
     brodcastData() {
@@ -159,21 +152,21 @@ export default {
 </script>
 
 <template>
-  <el-dialog v-model="dialogVisible" title="请输入你的名子" width="30%">
+  <!-- <el-dialog v-model="dialogVisible" title="请输入你的名子" width="30%">
     <el-input v-model="curUser" placeholder="请输入你的名子" />
     <template #footer>
       <span class="dialog-footer">
         <el-button type="primary" @click="confirmUser"> 确定 </el-button>
       </span>
     </template>
-  </el-dialog>
+  </el-dialog> -->
 
   <div class="room-content">
     <div class="left-panel">
-      <div>当前房间号：{{roomId}}</div>
-      <div>当前用户：{{curUser}}</div>
+      <div>当前房间号：{{ roomId }}</div>
+      <div>当前用户：{{ curUser }}</div>
       <div>当前在线人数：{{ peopleNum }}</div>
-      <el-button @click="leaveRoom" :disabled="curUser===null" type="primary">退出房间</el-button>
+      <el-button @click="leaveRoom" :disabled="curUser === null" type="primary">退出房间</el-button>
       <el-divider />
       <div v-for="item in activityMsg">
         {{ item }}
@@ -193,38 +186,46 @@ export default {
   flex-direction: row;
   margin: 0 auto;
 }
+
 .left-panel {
   margin-left: 20px;
   width: 300px;
   height: 700px;
   border: 1px solid cornflowerblue;
 }
+
 .flow-chart {
   position: relative;
   width: 1100px;
   height: 100%;
 }
+
 .flow-chart :deep(.lf-graph) {
   background: rgb(247, 247, 247);
 }
+
 .flow-chart :deep(.lf-red-node),
 .flow-chart :deep(.lf-element-text) {
   cursor: move;
 }
+
 .flow-chart :deep(svg) {
   display: block;
 }
+
 .flow-chart-palette {
   position: absolute;
   left: 0;
   top: 0;
   z-index: 1;
 }
+
 .setting-panel {
   position: absolute;
   top: 0;
   right: 0;
 }
+
 .flow-chart :deep(.lf-element-text) {
   pointer-events: none;
 }

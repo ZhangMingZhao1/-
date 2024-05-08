@@ -6,19 +6,25 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "wsServe": "node ./bin/wsServer.mjs"
   },
   "dependencies": {
     "@antv/hierarchy": "^0.6.8",
     "@antv/layout": "^0.3.1",
-    "@logicflow/core": "^1.1.31",
-    "@logicflow/extension": "^1.1.31",
+    "@logicflow/core": "^1.2.27",
+    "@logicflow/extension": "^1.2.27",
     "dagre": "^0.8.5",
     "element-plus": "^2.2.17",
     "lodash.debounce": "^4.0.8",
     "socket.io-client": "^4.5.4",
     "vue": "^3.2.37",
-    "vue-router": "^4.1.6"
+    "vue-router": "^4.1.6",
+    "ws": "^7.5.9",
+    "xml-js": "^1.6.11",
+    "y-webrtc": "^10.2.5",
+    "y-websocket": "^2.0.2",
+    "yjs": "^13.6.15"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^3.1.0",
